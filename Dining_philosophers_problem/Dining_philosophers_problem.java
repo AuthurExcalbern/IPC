@@ -41,7 +41,7 @@ class Philosopher extends Thread
         System.out.println("Time : " + thinkingTime);
         
         //休眠
-        try{ sleep(1000); }
+        try{ sleep((long)(10000*Math.random())); }
         catch(InterruptedException e)
         {
             e.printStackTrace();
@@ -72,7 +72,7 @@ class Forks
     
     // synchronized 某线程执行时不允许其他线程执行
     
-    //
+    //缺点：同一个时刻只能有一个哲学家在进餐，并发低
     public synchronized void takeFork()
     {
         //获取当前线程
