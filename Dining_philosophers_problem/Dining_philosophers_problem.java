@@ -1,125 +1,112 @@
-//线程模拟实现
-class Philosopher extends Thread
-{
-    private int thinkingTime = 0;//已经思考了多少时间
-    private int eatingTime = 0;//已经进餐了多少时间
-    
-    int id;//哲学家的id
-    static int currentId = 0;//目前的id（记录已经有多少个哲学家
-    
-    //建立起这个哲学家的线程
-    private Forks fork;
-    
-    //赋予各个哲学家的id和线程
-    public Philosopher(Forks fork)
-    {
-        super();
-        id = currentId;
-        currentId++;
-        this.fork = fork;
-    }
-    
-    //哲学家线程开始运行
-    public void run()
-    {
-        //线程状态会一直在思考和进餐间转换
-        while(true)
-        {
-            thinking();//未进餐的思考状态
-            fork.takeFork();//开始尝试拿餐具
-            eating();//成功拿起餐具后开始进餐
-            fork.putFork();//放下餐具
-        }
-    }
-    
-    //哲学家的思考状态
-    private void thinking()
-    {
-        //记录哲学家和思考时间
-        thinkingTime++;
-        System.out.println("Philosopher " + id + " : thinking start!");
-        System.out.println("Time : " + thinkingTime);
-        
-        //休眠
-        try{ sleep((long)(10000*Math.random())); }
-        catch(InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-    }
-    
-    //哲学家的进餐状态
-    private void eating()
-    {
-        //记录哲学家和进餐时间
-        eatingTime++;
-        System.out.println("Philosopher " + id + " : eating start!");
-        System.out.println("Time : " + eatingTime);
-        
-        //休眠
-        try{ sleep(1000); }
-        catch(InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-    }
-}
-
-class Forks
-{
-    //记录餐具是否被拿起，false为未拿起
-    private boolean[] used = {false, false, false, false, false};
-    
-    // synchronized 某线程执行时不允许其他线程执行
-    
-    //缺点：同一个时刻只能有一个哲学家在进餐，并发低
-    public synchronized void takeFork()
-    {
-        //获取当前线程
-        Philosopher p = (Philosopher)Thread.currentThread();
-        
-        int id = p.id;
-        
-        //当哲学家左右餐具都未被拿起时才可以跳出等待状态
-        while(used[id] || used[(id + 1) % 5])
-        {
-            try{ wait(); }
-            catch(InterruptedException e)
-            {
-                e.printStackTrace();
-            }
-        }
-        
-        System.out.println("Philosopher " + id + " : takeFork!");
-        
-        //改变餐具状态
-        used[id] = true;
-        used[(id + 1) % 5] = true;
-    }
-    
-    public synchronized void putFork()
-    {
-        Philosopher p = (Philosopher)Thread.currentThread();
-        int id = p.id;
-        
-        System.out.println("Philosopher " + id + " : putFork!");
-        
-        used[id] = false;
-        used[(id + 1) % 5] = false;
-    }
-}
-
 public class Dining_philosophers_problem
 {
+    //有多少个哲学家
+    static final int N = 5;
+    
+    //哲学家的id
+    static int currentId = 0;
+    
     public static void main(String[] args)
     {
         Forks f = new Forks();
         
         //用start方法启动线程
-        new Philosopher(f).start();
-        new Philosopher(f).start();
-        new Philosopher(f).start();
-        new Philosopher(f).start();
-        new Philosopher(f).start();
+        for(int i = 0; i < N; i++)
+            new Philosopher(f).start();
+    }
+    
+    //哲学家
+    static class Philosopher extends Thread
+    {
+        int id;//哲学家的id
+        
+        //建立起这个哲学家的线程
+        private Forks fork;
+        
+        //赋予各个哲学家的id
+        public Philosopher(Forks fork)
+        {
+            super();
+            id = currentId;
+            currentId++;
+            this.fork = fork;
+        }
+        
+        //哲学家线程开始运行
+        public void run()
+        {
+            //线程状态会一直在思考和进餐间转换
+            while(true)
+            {
+                fork.takeFork();//开始尝试拿餐具
+                
+                //重要！！！
+                //需要哲学家在进餐后先放弃自己的时间片
+                //让其他哲学家运行
+                //以防止一个哲学家线程占用
+                try{ sleep(10); }
+                catch(InterruptedException e){ e.printStackTrace(); }
+                
+                fork.putFork();//放下餐具
+            }
+        }
+    }
+    
+    //用管程来实现哲学家的进餐
+    static class Forks extends Thread
+    {
+        //记录餐哲学家状态：0-思考;1-饥饿;2进餐
+        private int[] the_status = {0, 0, 0, 0, 0};
+        
+        // synchronized 某线程执行时不允许其他线程执行
+        public synchronized void takeFork()
+        {
+            //获取当前线程
+            Philosopher p = (Philosopher)Thread.currentThread();
+            
+            int id = p.id;
+            the_status[id] = 1;//转换为饥饿状态
+            
+            //检测是否能进餐
+            test(id);
+        }
+        
+        public synchronized void putFork()
+        {
+            
+            Philosopher p = (Philosopher)Thread.currentThread();
+    
+            int id = p.id;
+        
+            //如果哲学家是饥饿状态，每拿到筷子自然不能放下筷子
+            //所以直接返回
+            if(the_status[id] == 1) return;
+            
+            //放下筷子，转变为思考状态
+            the_status[id] = 0;
+            
+            System.out.println("Philosopher " + id + ": THINKING");
+            try{ sleep(1000); }
+            catch(InterruptedException e){ e.printStackTrace(); }
+            
+            //检测左右的哲学家是否可以进餐了
+            test((id+N-1) % N);
+            test((id+1) % N);
+            
+        }
+    
+        public synchronized void test(int i)
+        {
+            //当且仅当哲学家为饥饿状态且左右没有哲学家在进餐时才可以进餐
+            if(the_status[i] == 1 && the_status[(i+N-1) % N] != 2 && the_status[(i+1) % N] != 2)
+            {
+                //记录为进餐状态
+                the_status[i] = 2;
+                
+                System.out.println("Philosopher " + i + ": EATING");
+                try{ sleep(1000); }
+                catch(InterruptedException e){ e.printStackTrace(); }
+            }
+        }
     }
 }

@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<pthread.h>//线程模拟实现
+#include<unistd.h>
 #define MAX 100//需要生产的数量
 
 pthread_mutex_t the_mutex;//互斥量
@@ -8,49 +9,10 @@ pthread_cond_t condc, condp;//条件变量
 int buffer = 0;//生产者和消费者的缓冲区
 
 //生产者函数
-void *producer(void *ptr)
-{
-    int i;
-
-    for(i = 1; i <= MAX; i++)
-    {
-        pthread_mutex_lock(&the_mutex);//对互斥量加锁
-
-        //当缓冲区内容不为0
-        //就等待一个条件变量，并解锁它的互斥量
-        while(buffer != 0) pthread_cond_wait(&condp, &the_mutex);
-
-        printf("Producer time: Add data!\n");
-        buffer = i;//将数据放入缓冲区
-
-        pthread_cond_signal(&condc);//唤醒消费者
-        pthread_mutex_unlock(&the_mutex); //对互斥量解锁
-    }
-
-    pthread_exit(0);
-}
+void *producer(void *ptr);
 
 //消费者函数
-void *consumer(void *ptr)
-{
-    int i;
-
-    //内容如上
-    for(i = 1; i <= MAX; i++)
-    {
-        pthread_mutex_lock(&the_mutex);
-
-        while(buffer == 0) pthread_cond_wait(&condc, &the_mutex);
-
-        printf("Consumer time: Put data %d\n", buffer);
-        buffer = 0;//取出数据
-
-        pthread_cond_signal(&condp);
-        pthread_mutex_unlock(&the_mutex); 
-    }
-
-    pthread_exit(0);
-}
+void *consumer(void *ptr);
 
 int main(int argc, char **argv)
 {
@@ -76,4 +38,53 @@ int main(int argc, char **argv)
     pthread_mutex_destroy(&the_mutex);
 
     return 0;
+}
+
+//生产者函数
+void *producer(void *ptr)
+{
+    int i;
+
+    for(i = 1; i <= MAX; i++)
+    {
+        pthread_mutex_lock(&the_mutex);//对互斥量加锁
+
+        //当缓冲区内容不为0
+        //就等待一个条件变量，并解锁它的互斥量
+        while(buffer != 0) pthread_cond_wait(&condp, &the_mutex);
+
+        printf("Producer time: Add data %d\n", i);
+        sleep(1);
+        
+        buffer = i;//将数据放入缓冲区
+
+        pthread_cond_signal(&condc);//唤醒消费者
+        pthread_mutex_unlock(&the_mutex); //对互斥量解锁
+    }
+
+    pthread_exit(0);
+}
+
+//消费者函数
+void *consumer(void *ptr)
+{
+    int i;
+
+    //内容如上
+    for(i = 1; i <= MAX; i++)
+    {
+        pthread_mutex_lock(&the_mutex);
+
+        while(buffer == 0) pthread_cond_wait(&condc, &the_mutex);
+
+        printf("Consumer time: Put data %d\n", buffer);
+        sleep(1);
+        
+        buffer = 0;//取出数据
+
+        pthread_cond_signal(&condp);
+        pthread_mutex_unlock(&the_mutex); 
+    }
+
+    pthread_exit(0);
 }
