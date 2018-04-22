@@ -25,18 +25,21 @@ Typically, applications can use IPC, categorized as clients and servers, where t
 
 - [Readers–writers problem][wiki-RWP]
     + Readers-preference
-        - [C](./Readers–writers_problem/Readers_writers_problem.c)
-        Use `semaphore.h`.
+        - [C](./Readers–writers_problem/shm.c)
+        Use `semaphore.h` and `sys/shm.h`.
     + Writers-preference
-    +  No thread shall be allowed to starve
+    +  Other
+        - [C](./Readers–writers_problem/rwlock.c)
+        Use `pthread_rwlock_t`.
 
-## Note
-- Use `thread`. Not `process`.
-- Use `semaphore`(in C) and `synchronized`(in Java).But we also can solve problems by only using `pthread`(in C) or many other ways.
+## Notice
+- Some solutions use `thread`, and some sulutions use `process`.
+- `C`: When we use `thread`, we should add `-pthread`.
 
 ## Environment
-- `gcc (Ubuntu 5.4.0-6ubuntu1~16.04.9) 5.4.0`  Use `-pthread`
+- `gcc (Ubuntu 5.4.0-6ubuntu1~16.04.9) 5.4.0`
 - `g++ (Ubuntu 5.4.0-6ubuntu1~16.04.9) 5.4.0`
+- `clang version 3.8.0-2ubuntu4 (tags/RELEASE_380/final)`
 - `openjdk version "9-internal"` `javac 1.8.0_151`
 
 ## License
