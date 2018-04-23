@@ -140,14 +140,24 @@ void readers()
         //互斥更改读者人数
         sem_wait(&mutex);
         buf[0] = buf[0] + 1;
-        if(buf[0] == 1) sem_wait(&db); //当有一个读者就要锁住数据区
+        if(buf[0] == 1)
+        {
+            sem_wait(&db); //当有一个读者就要锁住数据区
+            //printf("lock db\n");
+        }
         sem_post(&mutex);
         
+        sem_wait(&mutex);
         read_data_base(buf, counter);
+        sem_post(&mutex);
         
         sem_wait(&mutex);
         buf[0] = buf[0] - 1;
-        if(buf[0] == 0) sem_post(&db);
+        if(buf[0] == 0)
+        {
+            sem_post(&db);
+            //printf("unlock db\n");
+        }
         sem_post(&mutex);
     }
     

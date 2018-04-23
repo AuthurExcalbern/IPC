@@ -46,11 +46,14 @@ int destory_shm(int shmid)
 
 int main(void)
 {
+    //connect shared memory
     int shmid = get_shm(0);
     int* buf;
     buf = shmat(shmid, NULL, 0);
     
+    //destory shared memory
     destory_shm(shmid);
+    
     printf("OK\n");
     return 0;
 }
